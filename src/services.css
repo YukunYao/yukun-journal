@@ -1,0 +1,26 @@
+.mobile-account{display:none}
+.service-page{max-width:1120px;margin:0 auto}
+.service-page h1{font-size:clamp(3.5rem,5vw,5.4rem);line-height:1.04}
+.service-page .lead{max-width:760px}
+.service-auth-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:45px;margin:32px 0;padding-top:28px;border-top:1px solid var(--line)}
+.service-auth-grid>div{border-left:1px solid var(--line);padding-left:42px}
+.service-page h2{font-size:2rem;margin:0 0 18px}
+.service-page label{display:grid;gap:8px;margin:0 0 18px;color:#574b46;font-size:.9rem}
+.service-page input:not([type=checkbox]),.service-page textarea{width:100%;border:1px solid #ddd0c8;border-radius:4px;background:#fffdfa;padding:12px 14px;color:var(--ink);font:inherit}
+.service-page textarea{min-height:95px;resize:vertical}
+.service-page input:focus-visible,.service-page textarea:focus-visible{outline:2px solid #a75c61;outline-offset:2px}
+.service-page button{margin-right:12px}
+.service-choice{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:24px 0;padding:22px 0;border-block:1px solid var(--line)}
+.service-choice button{margin:0}
+.service-message{max-width:780px;padding:12px 16px;border-left:3px solid #ae8880;background:#faf1ec;color:#5d4038}
+.plan-card{margin:30px 0;padding:28px 32px;background:#fffcf8;border:1px solid var(--line)}
+.plan-card dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 30px}
+.plan-card dt{font-family:Fraunces,serif;font-size:1.25rem}
+.plan-card dd{margin:5px 0;color:#6f625b}
+.plan-questionnaire{margin:32px 0;max-width:760px;border-top:1px solid var(--line);padding-top:28px}
+.plan-questionnaire fieldset{border:1px solid var(--line);padding:18px 20px;margin:12px 0 20px}
+.plan-questionnaire legend{font-family:Fraunces,serif;font-size:1.25rem;padding:0 8px}
+.service-page .check-row{display:flex;align-items:flex-start;gap:10px;margin:11px 0;line-height:1.4}
+.service-page .check-row input{width:18px;height:18px;flex:none;accent-color:#bb7774;margin:1px 0 0}
+.price-panel .button{display:block;margin:20px 0 5px}
+@media(max-width:800px){.mobile-account{display:block}.service-auth-grid{grid-template-columns:1fr;gap:20px}.service-auth-grid>div{border-left:0;border-top:1px solid var(--line);padding:25px 0 0}.plan-card dl{grid-template-columns:1fr}}
