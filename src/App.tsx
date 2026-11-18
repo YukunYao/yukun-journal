@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, useState, type FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { addEntry, dailyMessage, emptyJournal, seedBalance, localDateKey, rangeStartDate, updateEntry, upsertWeight, type Entry, type EntryInput, type EntryKind, type JournalState, type WeightUnit } from './domain'
+import { addEntry, dailyMessage, emptyJournal, seedBalance, localDateKey, rangeStartDate, updateEntry, upsertWeight, weightRewardReason, type Entry, type EntryInput, type EntryKind, type JournalState, type WeightUnit } from './domain'
 import { EntryDrawer, Photo, Scene, WeightChart, WeightDialog } from './components'
 import { formatDate, formatWeight, labels } from './presentation'
 import { exportJournal, loadJournal, saveJournal } from './storage'
@@ -109,7 +109,20 @@ export default function App() {
     else { setReward(null); setNotice(ordinaryMessage) }
   }
   const saveEntry = async (input: EntryInput, id?: string) => { const next = id ? updateEntry(journal, id, input) : addEntry(journal, input); await commit(next); setDate(input.date); announceSave(next, 'journal', id ? 'Your entry was updated.' : 'Added to your day.') }
-  const saveWeight = async (value: number, unit: WeightUnit) => { const next = upsertWeight(journal, { date, value, unit }); await commit(next); announceSave(next, 'goal', 'Weight saved for this day.') }
+  const saveWeight = async (value: number, unit: WeightUnit) => {
+    const now = new Date()
+    const next = upsertWeight(journal, { date, value, unit }, now)
+    await commit(next)
+    const reason = weightRewardReason(journal, next, date, now)
+    const messages = {
+      earned: 'Weight saved.',
+      'past-date': 'Weight saved to your chart. Past dates do not award Light Seeds.',
+      'no-goal': 'Weight saved. Set an optional target in Spirit Room before a future weigh-in to earn Light Seeds.',
+      'already-awarded-today': 'Weight updated. You have already earned today’s weight-progress Seeds.',
+      'not-closer': 'Weight saved. Seeds appear when a new record is at least 0.1 kg closer to your target.',
+    }
+    announceSave(next, 'goal', messages[reason])
+  }
   const deleteEntry = async (entry: Entry) => { try { await commit({ ...journal, entries: journal.entries.filter((item) => item.id !== entry.id) }); setDeleted(entry); setNotice('Entry removed.') } catch { setNotice('Could not remove this entry. Please try again.') } }
   const dayEntries = journal.entries.filter((entry) => entry.date === date).sort((a, b) => a.createdAt.localeCompare(b.createdAt))
   const dayWeight = journal.weights.find((item) => item.date === date)
@@ -147,7 +160,7 @@ export default function App() {
     {privatePage && adult && ready && !loadError && path === '/ai-plan' && <AiPlanPage session={session} onNavigate={go} />}
     {privatePage && adult && ready && !loadError && ['/account', '/login', '/signup'].includes(path) && <AccountPage session={session} onNavigate={go} actions={{ mode: storageMode, local: localJournal, openCloud, copyLocal: () => createCloud(true), createCloud: () => createCloud(false), useLocal, cloudExists, busy: cloudBusy }} />}
     {privatePage && adult && ready && !loadError && !['/my-day', '/calendar', '/insights', '/spirit-room', '/help-me-pause', '/ai-plan', '/account', '/login', '/signup'].includes(path) && <main className="content-page"><h1>Page not found.</h1>{link('/my-day', 'Return to My Day', 'button primary')}</main>}
-    {reward && <RewardNotice reward={reward} spiritName={journal.spiritName} image={roomImage} onClose={() => setReward(null)} onRoom={() => { setReward(null); go('/spirit-room') }} />}
+    {reward && <RewardNotice reward={reward} spiritName={journal.spiritName} onClose={() => setReward(null)} onRoom={() => { setReward(null); go('/spirit-room') }} />}
     {notice && <div className="toast" role="status"><span>{notice}</span>{deleted && <button onClick={async () => { try { await commit({ ...journal, entries: [...journal.entries.filter((item) => item.id !== deleted.id), deleted] }); setDeleted(null); setNotice('Entry restored.') } catch { setNotice('Could not restore. Please try again.') } }}>Undo</button>}<button aria-label="Dismiss message" onClick={() => { setNotice(''); setDeleted(null) }}>×</button></div>}
     {entryOpen && <EntryDrawer key={editing?.id ?? draftMealSlot ?? 'new'} date={date} todayKey={todayKey} entry={editing} initialMealSlot={draftMealSlot} onClose={() => { setEntryOpen(false); setEditing(undefined) }} onSave={saveEntry} />}
     {weightOpen && adult && ready && <WeightDialog date={date} previous={dayWeight} onClose={() => setWeightOpen(false)} onSave={saveWeight} />}

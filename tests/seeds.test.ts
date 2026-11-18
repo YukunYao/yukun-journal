@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addEntry, buySeedItem, emptyJournal, equipSeedItem, normalizeJournal, seedBalance, setWeightGoal, upsertWeight } from '../src/domain'
+import { addEntry, buySeedItem, emptyJournal, equipSeedItem, normalizeJournal, seedBalance, setWeightGoal, upsertWeight, weightRewardReason } from '../src/domain'
 import { formatWeight } from '../src/presentation'
 
 const day = new Date('2026-11-18T12:00:00')
@@ -53,5 +53,20 @@ describe('Light Seeds', () => {
     expect(setWeightGoal(state, 65.75, 'kg').weightGoal?.targetKg).toBe(65.75)
     expect(() => upsertWeight(state, { date: '2026-11-18', value: 68.255, unit: 'kg' }, day)).toThrow('two decimal')
     expect(() => setWeightGoal(state, 65.755, 'kg')).toThrow('two decimal')
+  })
+
+  it('explains why a weight save did or did not earn seeds', () => {
+    const empty = emptyJournal()
+    const backfill = upsertWeight(empty, { date: '2026-11-17', value: 70, unit: 'kg' }, day)
+    expect(weightRewardReason(empty, backfill, '2026-11-17', day)).toBe('past-date')
+    const todayWithoutGoal = upsertWeight(empty, { date: '2026-11-18', value: 69, unit: 'kg' }, day)
+    expect(weightRewardReason(empty, todayWithoutGoal, '2026-11-18', day)).toBe('no-goal')
+    const goal = setWeightGoal(backfill, 68, 'kg')
+    const noProgress = upsertWeight(goal, { date: '2026-11-18', value: 70, unit: 'kg' }, day)
+    expect(weightRewardReason(goal, noProgress, '2026-11-18', day)).toBe('not-closer')
+    const progress = upsertWeight(goal, { date: '2026-11-18', value: 69.8, unit: 'kg' }, day)
+    expect(weightRewardReason(goal, progress, '2026-11-18', day)).toBe('earned')
+    const sameDayUpdate = upsertWeight(progress, { date: '2026-11-18', value: 69.5, unit: 'kg' }, day)
+    expect(weightRewardReason(progress, sameDayUpdate, '2026-11-18', day)).toBe('already-awarded-today')
   })
 })

@@ -133,6 +133,16 @@ export function upsertWeight(state: JournalState, input: { date: string; value: 
   return { ...next, weightGoal: { ...goal, closestKg: record.kg, awardedSteps: totalSteps }, weightSeedGrants: [...state.weightSeedGrants, { date: input.date, amount }] }
 }
 
+export type WeightRewardReason = 'earned' | 'past-date' | 'no-goal' | 'already-awarded-today' | 'not-closer'
+
+export function weightRewardReason(before: JournalState, after: JournalState, date: string, now = new Date()): WeightRewardReason {
+  if (seedBalance(after) > seedBalance(before)) return 'earned'
+  if (date !== localDateKey(now)) return 'past-date'
+  if (!before.weightGoal) return 'no-goal'
+  if (before.weightSeedGrants.some((grant) => grant.date === date)) return 'already-awarded-today'
+  return 'not-closer'
+}
+
 const companionLines = [
   'You showed up for yourself today.',
   'Small moments of care still count.',
