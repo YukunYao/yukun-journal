@@ -1,0 +1,63 @@
+/* The photographed room stays intact. Three quiet layers make the miniature world feel lived in. */
+.scene-room > .scene-window-light,
+.scene-room > .scene-spirit-breath,
+.scene-room > .scene-curtain {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.scene-room > .scene-window-light {
+  z-index: 1;
+  background: radial-gradient(ellipse 35% 42% at 20% 26%, rgba(255, 246, 205, .22), transparent 78%);
+  mix-blend-mode: screen;
+  animation: room-daylight 14s ease-in-out infinite alternate;
+}
+
+.scene-room > .scene-spirit-breath {
+  z-index: 2;
+  object-fit: cover;
+  -webkit-mask-image: radial-gradient(ellipse 24% 38% at var(--spirit-x, 61%) 47%, #000 62%, transparent 100%);
+  mask-image: radial-gradient(ellipse 24% 38% at var(--spirit-x, 61%) 47%, #000 62%, transparent 100%);
+  transform-origin: var(--spirit-x, 61%) 68%;
+  animation: spirit-breathe 8.8s ease-in-out infinite;
+}
+
+.scene-room > .scene-curtain {
+  z-index: 3;
+  object-fit: cover;
+  transform-origin: 15% 5%;
+  animation: curtain-breeze 7.4s ease-in-out infinite;
+}
+
+.scene-room > .scene-message { z-index: 4; }
+.scene-room[data-motion='paused'] > :is(.scene-window-light, .scene-spirit-breath, .scene-curtain) { animation-play-state: paused; }
+
+@media (min-width: 801px) {
+  .spirit-layout .scene-room { align-self: start; height: 720px; --spirit-x: 66%; }
+  .spirit-layout .scene-room > img { object-position: 22% center; }
+}
+
+@keyframes spirit-breathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(-2px) scale(1.008, 1.012); }
+  67% { transform: translateY(-1px) scale(1.005, 1.007); }
+}
+
+@keyframes curtain-breeze {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  42% { transform: translateX(3px) rotate(.25deg); }
+  72% { transform: translateX(1px) rotate(-.15deg); }
+}
+
+@keyframes room-daylight {
+  from { opacity: .35; }
+  to { opacity: .8; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-room > :is(.scene-window-light, .scene-spirit-breath, .scene-curtain) { animation: none; }
+  .scene-room > .scene-window-light { opacity: .45; }
+}

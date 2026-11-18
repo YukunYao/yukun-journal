@@ -14,7 +14,25 @@ export function Photo({ blob, alt }: { blob: Blob; alt: string }) {
 }
 
 export function Scene({ message, compact = false, variant = 'room', image }: { message?: string; compact?: boolean; variant?: 'room' | 'hero'; image?: string }) {
-  return <div className={`scene scene-${variant} ${compact ? 'scene-compact' : ''}`}><img src={variant === 'hero' ? '/assets/yukun-hero-v2.png' : image ?? scene} alt="The original cream-colored YUKUN companion in a warm miniature room" />{message && <p className="scene-message">{message}<span aria-hidden="true"> ♥</span></p>}</div>
+  const sceneRef = useRef<HTMLDivElement>(null)
+  const [inView, setInView] = useState(false)
+  const [pageVisible, setPageVisible] = useState(!document.hidden)
+  useEffect(() => {
+    const element = sceneRef.current
+    if (!element) return
+    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), { threshold: 0.05 })
+    observer.observe(element)
+    const onVisibility = () => setPageVisible(!document.hidden)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => { observer.disconnect(); document.removeEventListener('visibilitychange', onVisibility) }
+  }, [])
+  const source = variant === 'hero' ? '/assets/yukun-hero-v2.png' : image ?? scene
+  const moving = variant === 'room' && inView && pageVisible
+  return <div ref={sceneRef} className={`scene scene-${variant} ${compact ? 'scene-compact' : ''}`} data-motion={moving ? 'playing' : 'paused'}>
+    <img className="scene-base" src={source} alt="The original cream-colored YUKUN companion in a warm miniature room" />
+    {variant === 'room' && <><span className="scene-window-light" aria-hidden="true" /><img className="scene-spirit-breath" src={source} alt="" aria-hidden="true" /><img className="scene-curtain" src="/assets/yukun-room-curtain-v1.png" alt="" aria-hidden="true" /></>}
+    {message && <p className="scene-message">{message}<span aria-hidden="true"> ♥</span></p>}
+  </div>
 }
 
 export function EntryDrawer({ date, todayKey, entry, initialMealSlot, onClose, onSave }: { date: string; todayKey: string; entry?: Entry; initialMealSlot?: Entry['mealSlot']; onClose: () => void; onSave: (input: EntryInput, id?: string) => Promise<void> }) {

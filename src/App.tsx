@@ -14,6 +14,7 @@ import './design-alignment.css'
 import './services.css'
 import './spirit-shop.css'
 import './reward-notice.css'
+import './scene-motion.css'
 
 const today = () => localDateKey(new Date())
 
