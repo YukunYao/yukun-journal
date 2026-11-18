@@ -69,6 +69,7 @@ export function equipSeedItem(state: JournalState, itemId: SeedItemId | null, ca
 
 export function setWeightGoal(state: JournalState, target: number, unit: WeightUnit): JournalState {
   if (!Number.isFinite(target) || target <= 0) throw new Error('Enter a valid target weight.')
+  if (Math.abs(target * 100 - Math.round(target * 100)) > 0.000001) throw new Error('Use no more than two decimal places.')
   const latest = [...state.weights].sort((a, b) => b.date.localeCompare(a.date))[0]
   if (!latest) throw new Error('Log a current weight before setting a goal.')
   const targetKg = unit === 'lb' ? target * 0.45359237 : target
@@ -117,6 +118,7 @@ export function updateEntry(state: JournalState, id: string, input: EntryInput, 
 
 export function upsertWeight(state: JournalState, input: { date: string; value: number; unit: WeightUnit }, now = new Date()): JournalState {
   if (!Number.isFinite(input.value) || input.value <= 0) throw new Error('Enter a valid weight.')
+  if (Math.abs(input.value * 100 - Math.round(input.value * 100)) > 0.000001) throw new Error('Use no more than two decimal places.')
   if (input.date > localDateKey(now)) throw new Error('Future dates cannot be recorded yet.')
   const record: WeightRecord = { ...input, kg: input.unit === 'lb' ? input.value * 0.45359237 : input.value, updatedAt: now.toISOString() }
   const next = { ...state, weights: [...state.weights.filter((item) => item.date !== input.date), record].sort((a, b) => a.date.localeCompare(b.date)) }

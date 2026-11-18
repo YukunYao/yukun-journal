@@ -1,4 +1,4 @@
-import type { EntryKind } from './domain'
+import type { EntryKind, WeightUnit } from './domain'
 
 export const scene = '/assets/yukun-room-v2.png'
 
@@ -12,3 +12,5 @@ export const labels: Record<EntryKind, string> = {
 
 export const formatDate = (date: string, options: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric' }) =>
   new Intl.DateTimeFormat('en-US', options).format(new Date(`${date}T12:00:00`))
+
+export const formatWeight = (value: number, unit: WeightUnit) => `${value.toFixed(2)} ${unit}`

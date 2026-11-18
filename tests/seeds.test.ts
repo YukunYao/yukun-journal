@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { addEntry, buySeedItem, emptyJournal, equipSeedItem, normalizeJournal, seedBalance, setWeightGoal, upsertWeight } from '../src/domain'
+import { formatWeight } from '../src/presentation'
 
 const day = new Date('2026-11-18T12:00:00')
 
@@ -42,5 +43,15 @@ describe('Light Seeds', () => {
     expect(transitional.seedUnlocks).toHaveLength(1)
     const record = upsertWeight(emptyJournal(), { date: '2026-11-17', value: 70, unit: 'kg' }, day)
     expect(seedBalance(record)).toBe(0)
+  })
+
+  it('keeps hundredths for weight records and user-set targets', () => {
+    const state = upsertWeight(emptyJournal(), { date: '2026-11-18', value: 68.25, unit: 'kg' }, day)
+    expect(state.weights[0].value).toBe(68.25)
+    expect(formatWeight(state.weights[0].value, 'kg')).toBe('68.25 kg')
+    expect(formatWeight(68, 'kg')).toBe('68.00 kg')
+    expect(setWeightGoal(state, 65.75, 'kg').weightGoal?.targetKg).toBe(65.75)
+    expect(() => upsertWeight(state, { date: '2026-11-18', value: 68.255, unit: 'kg' }, day)).toThrow('two decimal')
+    expect(() => setWeightGoal(state, 65.755, 'kg')).toThrow('two decimal')
   })
 })
