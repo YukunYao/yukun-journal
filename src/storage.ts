@@ -1,4 +1,4 @@
-import { emptyJournal, type JournalState } from './domain'
+import { emptyJournal, normalizeJournal, type JournalState } from './domain'
 
 const DB_NAME = 'yukun-local-journal'
 const STORE = 'journal'
@@ -19,7 +19,7 @@ export async function loadJournal(): Promise<JournalState> {
   try {
     return await new Promise((resolve, reject) => {
       const request = db.transaction(STORE, 'readonly').objectStore(STORE).get('current')
-      request.onsuccess = () => resolve((request.result as JournalState | undefined) ?? emptyJournal())
+      request.onsuccess = () => resolve(normalizeJournal((request.result as JournalState | undefined) ?? emptyJournal()))
       request.onerror = () => reject(request.error ?? new Error('Could not read your journal.'))
     })
   } finally { db.close() }

@@ -18,15 +18,62 @@ export interface Entry {
 export type EntryInput = Pick<Entry, 'kind' | 'date' | 'title'> & Partial<Pick<Entry, 'detail' | 'mealSlot' | 'calories' | 'duration' | 'photo'>>
 export interface WeightRecord { date: string; value: number; unit: WeightUnit; kg: number; updatedAt: string }
 export interface SeedGrant { date: string; kind: EntryKind; amount: number }
+export interface SeedUnlock { itemId: string; cost: number; unlockdAt: string }
+export interface WeightGoal { targetKg: number; baselineKg: number; closestKg: number; awardedSteps: number }
+export const seedCatalog = [
+  { id: 'rose-scarf', name: 'Rose scarf', category: 'outfit', cost: 10, image: '/assets/room-scarf.png' },
+  { id: 'blue-sleep-cap', name: 'Blue sleep cap', category: 'outfit', cost: 20, image: '/assets/room-hat.png' },
+  { id: 'felt-star-garland', name: 'Felt star garland', category: 'decor', cost: 15, image: '/assets/room-garland.png' },
+] as const
+export type SeedItemId = typeof seedCatalog[number]['id']
 export interface JournalState {
   entries: Entry[]
   weights: WeightRecord[]
   seedLedger: SeedGrant[]
   spiritName: string
+  seedUnlocks: SeedUnlock[]
+  equippedOutfit: string | null
+  equippedDecor: string | null
+  weightGoal: WeightGoal | null
+  weightSeedGrants: { date: string; amount: number }[]
 }
 
 export function emptyJournal(): JournalState {
-  return { entries: [], weights: [], seedLedger: [], spiritName: '' }
+  return { entries: [], weights: [], seedLedger: [], spiritName: '', seedUnlocks: [], equippedOutfit: null, equippedDecor: null, weightGoal: null, weightSeedGrants: [] }
+}
+
+export function normalizeJournal(value: Partial<JournalState> | null | undefined): JournalState {
+  const legacyUnlocks = (value as Partial<JournalState> & { seedPurchases?: SeedUnlock[] } | undefined)?.seedPurchases
+  return { ...emptyJournal(), ...value, seedUnlocks: value?.seedUnlocks ?? legacyUnlocks ?? [], weightSeedGrants: value?.weightSeedGrants ?? [] }
+}
+
+export function seedBalance(state: JournalState): number {
+  return state.seedLedger.reduce((sum, item) => sum + item.amount, 0) + (state.weightSeedGrants ?? []).reduce((sum, item) => sum + item.amount, 0) - (state.seedUnlocks ?? []).reduce((sum, item) => sum + item.cost, 0)
+}
+
+export function buySeedItem(state: JournalState, itemId: SeedItemId, now = new Date()): JournalState {
+  const item = seedCatalog.find((candidate) => candidate.id === itemId)
+  if (!item) throw new Error('This item is unavailable.')
+  if ((state.seedUnlocks ?? []).some((unlock) => unlock.itemId === itemId)) throw new Error('This item is already yours.')
+  if (seedBalance(state) < item.cost) throw new Error('Not enough Light Seeds yet.')
+  return { ...state, seedUnlocks: [...(state.seedUnlocks ?? []), { itemId, cost: item.cost, unlockdAt: now.toISOString() }] }
+}
+
+export function equipSeedItem(state: JournalState, itemId: SeedItemId | null, category: 'outfit' | 'decor'): JournalState {
+  if (itemId) {
+    const item = seedCatalog.find((candidate) => candidate.id === itemId)
+    if (!item || item.category !== category || !(state.seedUnlocks ?? []).some((unlock) => unlock.itemId === itemId)) throw new Error('Unlock this item first.')
+  }
+  return category === 'outfit' ? { ...state, equippedOutfit: itemId } : { ...state, equippedDecor: itemId }
+}
+
+export function setWeightGoal(state: JournalState, target: number, unit: WeightUnit): JournalState {
+  if (!Number.isFinite(target) || target <= 0) throw new Error('Enter a valid target weight.')
+  const latest = [...state.weights].sort((a, b) => b.date.localeCompare(a.date))[0]
+  if (!latest) throw new Error('Log a current weight before setting a goal.')
+  const targetKg = unit === 'lb' ? target * 0.45359237 : target
+  if (Math.abs(latest.kg - targetKg) < 0.1) throw new Error('Choose a target at least 0.1 kg from your current record.')
+  return { ...state, weightGoal: { targetKg, baselineKg: latest.kg, closestKg: latest.kg, awardedSteps: 0 } }
 }
 
 export function localDateKey(date: Date): string {
@@ -72,7 +119,16 @@ export function upsertWeight(state: JournalState, input: { date: string; value: 
   if (!Number.isFinite(input.value) || input.value <= 0) throw new Error('Enter a valid weight.')
   if (input.date > localDateKey(now)) throw new Error('Future dates cannot be recorded yet.')
   const record: WeightRecord = { ...input, kg: input.unit === 'lb' ? input.value * 0.45359237 : input.value, updatedAt: now.toISOString() }
-  return { ...state, weights: [...state.weights.filter((item) => item.date !== input.date), record].sort((a, b) => a.date.localeCompare(b.date)) }
+  const next = { ...state, weights: [...state.weights.filter((item) => item.date !== input.date), record].sort((a, b) => a.date.localeCompare(b.date)) }
+  const goal = state.weightGoal
+  if (!goal || input.date !== localDateKey(now) || state.weightSeedGrants.some((grant) => grant.date === input.date)) return next
+  const oldDistance = Math.abs(goal.closestKg - goal.targetKg)
+  const newDistance = Math.abs(record.kg - goal.targetKg)
+  if (newDistance >= oldDistance - 0.099999) return next
+  const totalSteps = Math.floor((Math.abs(goal.baselineKg - goal.targetKg) - newDistance + 0.000001) / 0.1)
+  const amount = Math.min(5, Math.max(0, totalSteps - goal.awardedSteps))
+  if (!amount) return next
+  return { ...next, weightGoal: { ...goal, closestKg: record.kg, awardedSteps: totalSteps }, weightSeedGrants: [...state.weightSeedGrants, { date: input.date, amount }] }
 }
 
 const companionLines = [

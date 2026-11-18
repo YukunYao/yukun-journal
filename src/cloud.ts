@@ -1,4 +1,4 @@
-import type { JournalState, Entry } from './domain'
+import { normalizeJournal, type JournalState, type Entry } from './domain'
 import { supabase } from './services'
 
 type CloudEntry = Omit<Entry, 'photo'> & { photoPath?: string }
@@ -23,7 +23,7 @@ export async function loadCloudJournal(userId: string): Promise<CloudJournal | n
     if (photo.error) throw photo.error
     return { ...entry, photo: photo.data }
   }))
-  return { state: { ...body, entries }, revision: data.revision }
+  return { state: normalizeJournal({ ...body, entries }), revision: data.revision }
 }
 
 export async function saveCloudJournal(userId: string, state: JournalState, expectedRevision: number): Promise<number> {

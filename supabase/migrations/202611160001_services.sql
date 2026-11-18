@@ -59,14 +59,3 @@ revoke all on public.ai_plans from anon;
 grant select on public.ai_plans to authenticated;
 create policy "read own AI plan" on public.ai_plans for select to authenticated using (auth.uid() = user_id);
 -- Only the reviewed server route writes generated plans.
-
-create table if not exists public.purchase_entitlements (
-  user_id uuid primary key references auth.users(id) on delete cascade,
-  stripe_session_id text not null unique,
-  granted_at timestamptz not null default now()
-);
-alter table public.purchase_entitlements enable row level security;
-revoke all on public.purchase_entitlements from anon;
-grant select on public.purchase_entitlements to authenticated;
-create policy "read own entitlement" on public.purchase_entitlements for select to authenticated using (auth.uid() = user_id);
--- Only the verified Stripe webhook grants entitlements with the server's service role.

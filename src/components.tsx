@@ -13,8 +13,8 @@ export function Photo({ blob, alt }: { blob: Blob; alt: string }) {
   return <img ref={imageRef} className="food-sticker" alt={alt} />
 }
 
-export function Scene({ message, compact = false, variant = 'room' }: { message?: string; compact?: boolean; variant?: 'room' | 'hero' }) {
-  return <div className={`scene scene-${variant} ${compact ? 'scene-compact' : ''}`}><img src={variant === 'hero' ? '/assets/yukun-hero-v2.png' : scene} alt="The original cream-colored YUKUN companion in a warm miniature room" />{message && <p className="scene-message">{message}<span aria-hidden="true"> ♥</span></p>}</div>
+export function Scene({ message, compact = false, variant = 'room', image }: { message?: string; compact?: boolean; variant?: 'room' | 'hero'; image?: string }) {
+  return <div className={`scene scene-${variant} ${compact ? 'scene-compact' : ''}`}><img src={variant === 'hero' ? '/assets/yukun-hero-v2.png' : image ?? scene} alt="The original cream-colored YUKUN companion in a warm miniature room" />{message && <p className="scene-message">{message}<span aria-hidden="true"> ♥</span></p>}</div>
 }
 
 export function EntryDrawer({ date, todayKey, entry, initialMealSlot, onClose, onSave }: { date: string; todayKey: string; entry?: Entry; initialMealSlot?: Entry['mealSlot']; onClose: () => void; onSave: (input: EntryInput, id?: string) => Promise<void> }) {

@@ -21,11 +21,6 @@ export function AccountPage({ session, actions, onNavigate }: { session: Session
   const [message, setMessage] = useState('')
   const [working, setWorking] = useState(false)
   const [formMode, setFormMode] = useState<'signin' | 'signup'>('signin')
-  const [owned, setOwned] = useState<boolean | null>(null)
-  useEffect(() => {
-    if (!session || !supabase) return
-    supabase.from('purchase_entitlements').select('user_id').eq('user_id', session.user.id).maybeSingle().then(({ data, error }) => { if (!error) setOwned(Boolean(data)) })
-  }, [session])
   const submit = async (event: FormEvent<HTMLFormElement>, signup: boolean) => {
     event.preventDefault()
     if (!supabase) return
@@ -45,7 +40,7 @@ export function AccountPage({ session, actions, onNavigate }: { session: Session
         {actions.cloudExists === false && <button className="button outline" disabled={actions.busy} onClick={() => void actions.createCloud()}>Start an empty cloud journal</button>}
         {actions.cloudExists === null && <p>Checking your cloud journal…</p>}
       </>}
-    </div><p className="fine-print">If a cloud journal already exists, this page will not overwrite it. Photos are copied into a private account folder. Keep a local export as an extra backup.</p><p>Complete Collection: <strong>{owned === null ? 'Checking…' : owned ? 'Owned permanently' : 'Not purchased'}</strong></p><button className="text-button" onClick={async () => { await supabase?.auth.signOut(); actions.useLocal(); setOwned(null); onNavigate('/my-day') }}>Sign out</button></>}
+    </div><p className="fine-print">If a cloud journal already exists, this page will not overwrite it. Photos are copied into a private account folder. Keep a local export as an extra backup.</p><button className="text-button" onClick={async () => { await supabase?.auth.signOut(); actions.useLocal(); onNavigate('/my-day') }}>Sign out</button></>}
     {message && <p role="status" className="service-message">{message}</p>}
     <p><button className="text-button" onClick={() => onNavigate('/my-day')}>← Return to My Day</button></p>
   </main>
@@ -79,25 +74,4 @@ export function AiPlanPage({ session, onNavigate }: { session: Session | null; o
       <form onSubmit={generate} className="plan-questionnaire"><h2>{plan ? 'Request a new plan' : 'Before a plan'}</h2><p>These answers are sent only when you press Generate. Your journal entries are not sent.</p><label>Age<input type="number" min="13" max="120" value={answers.age} onChange={(e) => setAnswers((v) => ({ ...v, age: Number(e.target.value) }))} required /></label><label>What would you like help with?<textarea maxLength={500} value={answers.goal} onChange={(e) => setAnswers((v) => ({ ...v, goal: e.target.value }))} required /></label><label>What does your current routine look like?<textarea maxLength={500} value={answers.routine} onChange={(e) => setAnswers((v) => ({ ...v, routine: e.target.value }))} required /></label><fieldset><legend>Health & safety</legend>{([['pregnant','I am pregnant'],['breastfeeding','I am breastfeeding'],['postpartumNeedsCare','I am postpartum and need medical guidance'],['currentEatingDisorder','I currently have an eating disorder or significant eating concerns'],['medicalConcern','I have another health concern that needs medical guidance']] as const).map(([field,label]) => <label className="check-row" key={field}><input type="checkbox" checked={answers[field]} onChange={(e) => setFlag(field,e.target.checked)} />{label}</label>)}</fieldset><label className="check-row"><input type="checkbox" checked={answers.consent} onChange={(e) => setFlag('consent',e.target.checked)} />I choose to share these answers with the AI plan service.</label>{answers.consent && !checked.eligible && <p className="service-message">{checked.message}</p>}<button className="button primary" disabled={working || !checked.eligible || !answers.goal.trim() || !answers.routine.trim()}>{working ? 'Preparing…' : 'Generate a gentle plan'}</button>{error && <p className="form-error" role="alert">{error}</p>}</form>
     </>}
   </main>
-}
-
-export function PurchaseButton({ session }: { session: Session | null }) {
-  const [message, setMessage] = useState('')
-  const [working, setWorking] = useState(false)
-  const [offer, setOffer] = useState<{ available: boolean; amount?: number; currency?: string } | null>(null)
-  useEffect(() => { if (servicesConfigured) fetch('/api/offer').then((response) => response.json()).then(setOffer).catch(() => setOffer({ available: false })) }, [])
-  if (!servicesConfigured || !offer?.available || offer.amount === undefined || !offer.currency) return <p className="muted">Checkout will open after the one-time price and payment review are complete.</p>
-  const priceLabel = new Intl.NumberFormat('en-US', { style: 'currency', currency: offer.currency.toUpperCase() }).format(offer.amount / 100)
-  const checkout = async () => {
-    if (!session) { setMessage('Sign in from Account before purchasing.'); return }
-    setWorking(true)
-    try {
-      const response = await fetch('/api/create-checkout', { method: 'POST', headers: { Authorization: `Bearer ${session.access_token}` } })
-      const payload = await response.json()
-      if (!response.ok || !payload.url) throw new Error(payload.error || 'Checkout unavailable.')
-      location.assign(payload.url)
-    } catch (cause) { setMessage(cause instanceof Error ? cause.message : 'Checkout unavailable.') }
-    finally { setWorking(false) }
-  }
-  return <><strong>{priceLabel} · one-time</strong><button className="button primary" disabled={working} onClick={() => void checkout()}>Buy Complete Collection</button>{message && <p role="status" className="service-message">{message}</p>}</>
 }
