@@ -8,10 +8,12 @@ import { loadCloudJournal, saveCloudJournal } from './cloud'
 import { supabase } from './services'
 import { AccountPage, AiPlanPage } from './ServicePages'
 import { SpiritShop } from './SpiritShop'
+import { RewardNotice, type RewardEvent } from './RewardNotice'
 import './styles.css'
 import './design-alignment.css'
 import './services.css'
 import './spirit-shop.css'
+import './reward-notice.css'
 
 const today = () => localDateKey(new Date())
 
@@ -29,6 +31,7 @@ export default function App() {
   const [draftMealSlot, setDraftMealSlot] = useState<Entry['mealSlot'] | undefined>()
   const [weightOpen, setWeightOpen] = useState(false)
   const [notice, setNotice] = useState('')
+  const [reward, setReward] = useState<RewardEvent | null>(null)
   const [deleted, setDeleted] = useState<Entry | null>(null)
   const [calendarMonth, setCalendarMonth] = useState(() => new Date().getMonth())
   const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear())
@@ -69,6 +72,7 @@ export default function App() {
   }, [userId])
   useEffect(() => { const pop = () => setPath(location.pathname); addEventListener('popstate', pop); return () => removeEventListener('popstate', pop) }, [])
   useEffect(() => { if (!notice) return; const timer = setTimeout(() => { setNotice(''); setDeleted(null) }, 6000); return () => clearTimeout(timer) }, [notice])
+  useEffect(() => { if (!reward) return; const timer = setTimeout(() => setReward(null), 6500); return () => clearTimeout(timer) }, [reward])
   const go = (to: string) => { if (path === '/help-me-pause' && supportStep === 'feeling' && (feeling || note.trim()) && to !== '/help-me-pause' && !window.confirm('Leave without saving your feeling note?')) return; history.pushState({}, '', to); setPath(to); setMobileMenuOpen(false); scrollTo(0, 0) }
   const link = (to: string, label: string, className = '') => <a href={to} className={className} onClick={(event) => { if (to.startsWith('#')) return; event.preventDefault(); go(to) }}>{className === 'wordmark' ? <><svg className="lamp-mark" viewBox="0 0 36 50" fill="none" aria-hidden="true"><path d="M18 19C13 8 18 2 23 3c6 1 5 9 2 12" stroke="#bd8d69" strokeWidth="3" strokeLinecap="round"/><path d="M18 20c-8 2-13 8-12 16 1 8 8 11 13 11s13-5 13-13c0-7-5-12-14-14Z" fill="#f8d892" stroke="#dca76f" strokeWidth="2"/><path d="M13 23c-3 7-2 16 4 22m4-23c4 7 5 16 0 23" stroke="#e3ad74" strokeWidth="1.5"/></svg><svg className="brand-letters" viewBox="0 0 240 60" fill="none" aria-hidden="true"><g stroke="#3e2b26" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 9 27 30 45 8M27 30v20"/><path d="M60 9v27c0 11 6 16 15 16s15-6 15-17V8"/><path d="M108 8v43m31-43-30 24m8-7 24 26"/><path d="M155 9v27c0 11 6 16 15 16s15-6 15-17V8"/><path d="M201 50V9l29 41V9"/></g></svg><span className="visually-hidden">YUKUN</span></> : label}</a>
   const commit = async (next: JournalState) => {
@@ -99,8 +103,13 @@ export default function App() {
     finally { setCloudBusy(false) }
   }
   const useLocal = () => { setJournal(localJournal); setStorageMode('local'); setNotice('Viewing this browser’s journal.') }
-  const saveEntry = async (input: EntryInput, id?: string) => { await commit(id ? updateEntry(journal, id, input) : addEntry(journal, input)); setDate(input.date); setNotice(id ? 'Your entry was updated.' : 'Added to your day.') }
-  const saveWeight = async (value: number, unit: WeightUnit) => { await commit(upsertWeight(journal, { date, value, unit })); setNotice('Weight saved for this day.') }
+  const announceSave = (next: JournalState, kind: RewardEvent['kind'], ordinaryMessage: string) => {
+    const amount = seedBalance(next) - seedBalance(journal)
+    if (amount > 0) { setNotice(''); setDeleted(null); setReward({ id: crypto.randomUUID(), amount, kind, balance: seedBalance(next) }) }
+    else { setReward(null); setNotice(ordinaryMessage) }
+  }
+  const saveEntry = async (input: EntryInput, id?: string) => { const next = id ? updateEntry(journal, id, input) : addEntry(journal, input); await commit(next); setDate(input.date); announceSave(next, 'journal', id ? 'Your entry was updated.' : 'Added to your day.') }
+  const saveWeight = async (value: number, unit: WeightUnit) => { const next = upsertWeight(journal, { date, value, unit }); await commit(next); announceSave(next, 'goal', 'Weight saved for this day.') }
   const deleteEntry = async (entry: Entry) => { try { await commit({ ...journal, entries: journal.entries.filter((item) => item.id !== entry.id) }); setDeleted(entry); setNotice('Entry removed.') } catch { setNotice('Could not remove this entry. Please try again.') } }
   const dayEntries = journal.entries.filter((entry) => entry.date === date).sort((a, b) => a.createdAt.localeCompare(b.createdAt))
   const dayWeight = journal.weights.find((item) => item.date === date)
@@ -138,6 +147,7 @@ export default function App() {
     {privatePage && adult && ready && !loadError && path === '/ai-plan' && <AiPlanPage session={session} onNavigate={go} />}
     {privatePage && adult && ready && !loadError && ['/account', '/login', '/signup'].includes(path) && <AccountPage session={session} onNavigate={go} actions={{ mode: storageMode, local: localJournal, openCloud, copyLocal: () => createCloud(true), createCloud: () => createCloud(false), useLocal, cloudExists, busy: cloudBusy }} />}
     {privatePage && adult && ready && !loadError && !['/my-day', '/calendar', '/insights', '/spirit-room', '/help-me-pause', '/ai-plan', '/account', '/login', '/signup'].includes(path) && <main className="content-page"><h1>Page not found.</h1>{link('/my-day', 'Return to My Day', 'button primary')}</main>}
+    {reward && <RewardNotice reward={reward} spiritName={journal.spiritName} image={roomImage} onClose={() => setReward(null)} onRoom={() => { setReward(null); go('/spirit-room') }} />}
     {notice && <div className="toast" role="status"><span>{notice}</span>{deleted && <button onClick={async () => { try { await commit({ ...journal, entries: [...journal.entries.filter((item) => item.id !== deleted.id), deleted] }); setDeleted(null); setNotice('Entry restored.') } catch { setNotice('Could not restore. Please try again.') } }}>Undo</button>}<button aria-label="Dismiss message" onClick={() => { setNotice(''); setDeleted(null) }}>×</button></div>}
     {entryOpen && <EntryDrawer key={editing?.id ?? draftMealSlot ?? 'new'} date={date} todayKey={todayKey} entry={editing} initialMealSlot={draftMealSlot} onClose={() => { setEntryOpen(false); setEditing(undefined) }} onSave={saveEntry} />}
     {weightOpen && adult && ready && <WeightDialog date={date} previous={dayWeight} onClose={() => setWeightOpen(false)} onSave={saveWeight} />}

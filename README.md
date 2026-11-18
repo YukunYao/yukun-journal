@@ -10,6 +10,7 @@ A gentle, English-language journaling website for meals, movement, mood, cycle n
 - One optional weight value per day, with a chart of recorded points and neutral calendar and Insights views.
 - Meal photo stickers. Users write their own food names and may enter calories manually; the app does not identify food or estimate calories.
 - Companion room, naming, a visible Light Seeds balance, and an unlockable wardrobe and room décor. Seeds come from journal activity and optional progress toward a user-set weight goal; there are no payments.
+- A dismissible companion-and-seed notice appears only when a save actually earns Light Seeds; edits and backfills keep ordinary save feedback.
 - Structured “Help me pause” choices and a JSON export of local records and photos.
 - Responsive desktop and mobile browser layouts.
 - Optional email account and separate cloud journal once Supabase is configured. An explicit action copies the local journal; signing in alone never migrates it.
