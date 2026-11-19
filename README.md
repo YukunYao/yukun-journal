@@ -13,6 +13,7 @@ A gentle, English-language journaling website for meals, movement, mood, cycle n
 - The companion scene uses the original static room image, including the selected outfit and décor.
 - A dismissible notice shows the happy companion speaking and lifting a Seed only when a save actually earns Light Seeds. Weight saves without a reward explain why; edits and backfills keep ordinary save feedback.
 - Weight can be recorded before choosing an optional target. If today's record is closer to a newly set first target than the previous dated weigh-in, the missed progress Seeds are granted immediately (up to five); changing the target again cannot grant them twice.
+- Replacing today's weight recalculates that day's goal-progress Seeds. Excess Seeds are removed; if the corrected balance cannot cover an unlock, the newest unlock is invalidated and unequipped, with a notice naming it. A fully funded unlock remains available.
 - Structured “Help me pause” choices and a JSON export of local records and photos.
 - Responsive desktop and mobile browser layouts.
 - Optional email account and separate cloud journal once Supabase is configured. An explicit action copies the local journal; signing in alone never migrates it.
