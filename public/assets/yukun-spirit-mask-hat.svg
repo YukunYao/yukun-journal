@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1536" height="1024" viewBox="0 0 1536 1024">
-  <defs><filter id="edge" x="-8%" y="-8%" width="116%" height="116%"><feGaussianBlur stdDeviation="2.5"/></filter></defs>
-  <g fill="#fff" filter="url(#edge)">
-    <path d="M759 458 C749 397 772 319 817 284 C864 247 944 251 1002 280 C1060 310 1090 373 1101 449 C1138 456 1153 483 1136 512 C1127 526 1116 530 1104 532 C1121 586 1125 642 1107 665 C1081 698 1008 708 925 708 C839 708 770 700 748 661 C729 626 731 522 759 458Z"/>
-  </g>
-</svg>

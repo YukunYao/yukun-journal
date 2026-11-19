@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1536" height="1024" viewBox="0 0 1536 1024">
-  <defs><filter id="edge" x="-8%" y="-8%" width="116%" height="116%"><feGaussianBlur stdDeviation="2.5"/></filter></defs>
-  <g fill="#fff" filter="url(#edge)">
-    <path d="M900 314 C824 309 773 368 751 451 C729 525 723 621 746 659 C772 699 845 706 925 707 C1012 708 1074 691 1105 651 C1130 617 1122 536 1103 469 C1079 374 1021 323 951 316 C934 313 916 313 900 314Z"/>
-    <path d="M881 339 C934 303 940 250 894 222 C854 197 802 209 780 247 C769 266 766 287 748 307" fill="none" stroke="#fff" stroke-width="51" stroke-linecap="round" stroke-linejoin="round"/>
-    <ellipse cx="758" cy="338" rx="65" ry="60"/>
-  </g>
-</svg>
