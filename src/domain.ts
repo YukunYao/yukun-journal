@@ -67,14 +67,24 @@ export function equipSeedItem(state: JournalState, itemId: SeedItemId | null, ca
   return category === 'outfit' ? { ...state, equippedOutfit: itemId } : { ...state, equippedDecor: itemId }
 }
 
-export function setWeightGoal(state: JournalState, target: number, unit: WeightUnit): JournalState {
+export function setWeightGoal(state: JournalState, target: number, unit: WeightUnit, now = new Date()): JournalState {
   if (!Number.isFinite(target) || target <= 0) throw new Error('Enter a valid target weight.')
   if (Math.abs(target * 100 - Math.round(target * 100)) > 0.000001) throw new Error('Use no more than two decimal places.')
-  const latest = [...state.weights].sort((a, b) => b.date.localeCompare(a.date))[0]
+  const weights = [...state.weights].sort((a, b) => b.date.localeCompare(a.date))
+  const latest = weights[0]
   if (!latest) throw new Error('Log a current weight before setting a goal.')
   const targetKg = unit === 'lb' ? target * 0.45359237 : target
   if (Math.abs(latest.kg - targetKg) < 0.1) throw new Error('Choose a target at least 0.1 kg from your current record.')
-  return { ...state, weightGoal: { targetKg, baselineKg: latest.kg, closestKg: latest.kg, awardedSteps: 0 } }
+  const prior = !state.weightGoal && latest.date === localDateKey(now) ? weights[1] : undefined
+  const baselineKg = prior?.kg ?? latest.kg
+  const progress = prior ? Math.abs(prior.kg - targetKg) - Math.abs(latest.kg - targetKg) : 0
+  const steps = progress >= 0.099999 ? Math.floor((progress + 0.000001) / 0.1) : 0
+  const amount = state.weightSeedGrants.some((grant) => grant.date === latest.date) ? 0 : Math.min(5, steps)
+  return {
+    ...state,
+    weightGoal: { targetKg, baselineKg, closestKg: amount ? latest.kg : baselineKg, awardedSteps: amount ? steps : 0 },
+    weightSeedGrants: amount ? [...state.weightSeedGrants, { date: latest.date, amount }] : state.weightSeedGrants,
+  }
 }
 
 export function localDateKey(date: Date): string {

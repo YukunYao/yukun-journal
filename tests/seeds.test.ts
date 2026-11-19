@@ -35,6 +35,33 @@ describe('Light Seeds', () => {
     expect(seedBalance(gain)).toBe(1)
   })
 
+  it('catches up today’s goal progress when the target is set after the weigh-in', () => {
+    let state = upsertWeight(emptyJournal(), { date: '2026-11-17', value: 70, unit: 'kg' }, day)
+    state = upsertWeight(state, { date: '2026-11-18', value: 69.7, unit: 'kg' }, day)
+    expect(seedBalance(state)).toBe(0)
+    state = setWeightGoal(state, 68, 'kg', day)
+    expect(seedBalance(state)).toBe(3)
+    expect(state.weightSeedGrants).toEqual([{ date: '2026-11-18', amount: 3 }])
+    expect(setWeightGoal(state, 67, 'kg', day).weightSeedGrants).toEqual(state.weightSeedGrants)
+    expect(seedBalance(setWeightGoal(state, 67, 'kg', day))).toBe(3)
+  })
+
+  it('does not create goal rewards without a prior weigh-in or for historical dates', () => {
+    const single = upsertWeight(emptyJournal(), { date: '2026-11-18', value: 69.7, unit: 'kg' }, day)
+    expect(seedBalance(setWeightGoal(single, 68, 'kg', day))).toBe(0)
+    let old = upsertWeight(emptyJournal(), { date: '2026-11-16', value: 70, unit: 'kg' }, day)
+    old = upsertWeight(old, { date: '2026-11-17', value: 69.7, unit: 'kg' }, day)
+    expect(seedBalance(setWeightGoal(old, 68, 'kg', day))).toBe(0)
+  })
+
+  it('caps late goal rewards at five and supports a higher target', () => {
+    let state = upsertWeight(emptyJournal(), { date: '2026-11-17', value: 60, unit: 'kg' }, day)
+    state = upsertWeight(state, { date: '2026-11-18', value: 60.9, unit: 'kg' }, day)
+    state = setWeightGoal(state, 63, 'kg', day)
+    expect(seedBalance(state)).toBe(5)
+    expect(state.weightGoal?.baselineKg).toBe(60)
+  })
+
   it('does not reward backfills and upgrades older local records', () => {
     const old = normalizeJournal({ entries: [], weights: [], seedLedger: [], spiritName: 'Pip' })
     expect(seedBalance(old)).toBe(0)
