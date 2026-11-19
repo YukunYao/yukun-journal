@@ -10,7 +10,7 @@ A gentle, English-language journaling website for meals, movement, mood, cycle n
 - One optional weight value per day, with a chart of recorded points and neutral calendar and Insights views.
 - Meal photo stickers. Users write their own food names and may enter calories manually; the app does not identify food or estimate calories.
 - Companion room, naming, a visible Light Seeds balance, and an unlockable wardrobe and room décor. Seeds come from journal activity and optional progress toward a user-set weight goal; there are no payments.
-- The companion scene uses layered motion: the seated spirit rocks, the window curtain and flower bouquets sway, and daylight shifts. Ambient loops pause offscreen or in a hidden tab and stop under reduced-motion preferences.
+- The companion scene uses isolated foreground layers: the seated spirit rocks, the window curtain and flower bouquets sway, and daylight shifts while the photographed room and furniture remain still. Ambient loops pause offscreen or in a hidden tab and stop under reduced-motion preferences.
 - A dismissible notice shows the happy companion speaking and lifting a Seed only when a save actually earns Light Seeds. Weight saves without a reward explain why; edits and backfills keep ordinary save feedback.
 - Structured “Help me pause” choices and a JSON export of local records and photos.
 - Responsive desktop and mobile browser layouts.

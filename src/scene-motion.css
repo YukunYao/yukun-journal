@@ -24,24 +24,32 @@
 }
 
 .scene-room > .scene-flower-wall {
-  -webkit-mask-image: radial-gradient(ellipse 8% 14% at 39% 31%, #000 53%, transparent 100%);
-  mask-image: radial-gradient(ellipse 8% 14% at 39% 31%, #000 53%, transparent 100%);
+  clip-path: inset(13% 49% 48% 26%);
   transform-origin: 39% 45%;
   animation: flowers-wall 6.9s ease-in-out infinite;
 }
 
 .scene-room > .scene-flower-table {
-  -webkit-mask-image: radial-gradient(ellipse 7% 11% at 25% 59%, #000 55%, transparent 100%);
-  mask-image: radial-gradient(ellipse 7% 11% at 25% 59%, #000 55%, transparent 100%);
+  clip-path: inset(48% 64% 19% 10%);
   transform-origin: 25% 69%;
   animation: flowers-table 5.8s ease-in-out infinite;
 }
 
+.scene-outfit-plain { --scene-spirit-mask: url('/assets/yukun-spirit-mask-plain.svg'); }
+.scene-outfit-scarf { --scene-spirit-mask: url('/assets/yukun-spirit-mask-scarf.svg'); }
+.scene-outfit-hat { --scene-spirit-mask: url('/assets/yukun-spirit-mask-hat.svg'); }
+
 .scene-room > .scene-spirit-breath {
   z-index: 3;
   object-fit: cover;
-  -webkit-mask-image: radial-gradient(ellipse 22% 36% at var(--spirit-x, 61%) 45%, #000 65%, transparent 100%);
-  mask-image: radial-gradient(ellipse 22% 36% at var(--spirit-x, 61%) 45%, #000 65%, transparent 100%);
+  -webkit-mask-image: var(--scene-spirit-mask);
+  mask-image: var(--scene-spirit-mask);
+  -webkit-mask-size: cover;
+  mask-size: cover;
+  -webkit-mask-position: var(--scene-mask-x, 50%) center;
+  mask-position: var(--scene-mask-x, 50%) center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   transform-origin: var(--spirit-x, 61%) 67%;
   animation: spirit-rock 7.2s ease-in-out infinite;
 }
@@ -56,9 +64,21 @@
 .scene-room > .scene-message { z-index: 5; }
 .scene-room[data-motion='paused'] > :is(.scene-window-light, .scene-flower-wall, .scene-flower-table, .scene-spirit-breath, .scene-curtain) { animation-play-state: paused; }
 
+.scene-compact { --scene-mask-x: 65%; }
+.journal-aside .scene-compact { --scene-mask-x: 55%; }
+
 @media (min-width: 801px) {
-  .spirit-layout .scene-room { align-self: start; height: 720px; --spirit-x: 66%; }
+  .spirit-layout .scene-room { align-self: start; height: 720px; --spirit-x: 66%; --scene-mask-x: 22%; }
   .spirit-layout .scene-room > img { object-position: 22% center; }
+}
+
+@media (max-width: 800px) {
+  .spirit-layout .scene-room, .journal-aside .scene-compact { --scene-mask-x: 80%; }
+  .mobile-spirit .scene-room { --scene-mask-x: 54%; }
+}
+
+@media (max-width: 520px) {
+  .spirit-layout .scene-room { --scene-mask-x: 60%; }
 }
 
 @keyframes spirit-rock {
