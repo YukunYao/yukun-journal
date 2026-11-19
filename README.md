@@ -23,6 +23,8 @@ A gentle, English-language journaling website for meals, movement, mood, cycle n
 
 **Preview boundary:** Anonymous records and photos are stored in the visitor’s browser with IndexedDB. Clearing site data or switching devices can remove them. My Day can export a JSON backup and restore it into this browser after a file preview and explicit replacement confirmation; restoration does not modify a separate cloud journal. With Supabase configured, a signed-in person may choose a separate cloud journal; the local copy is never deleted automatically. There is no youth journal or clinical service. The private journal in this development preview requires an adult self-declaration; this is not a production age-verification system.
 
+Account & cloud includes a separate browser-data control. It can delete only the journal stored in the current browser after an explicit `DELETE` confirmation, with a backup export offered first; it does not remove an account or cloud journal.
+
 ## Run locally
 
 Requires Node.js 22.12 or later.
