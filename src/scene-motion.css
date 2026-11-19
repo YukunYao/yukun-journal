@@ -1,5 +1,7 @@
-/* The photographed room stays intact. Three quiet layers make the miniature world feel lived in. */
+/* The original photographed character and flowers move over a clean room plate. */
 .scene-room > .scene-window-light,
+.scene-room > .scene-flower-wall,
+.scene-room > .scene-flower-table,
 .scene-room > .scene-spirit-breath,
 .scene-room > .scene-curtain {
   position: absolute;
@@ -13,43 +15,77 @@
   z-index: 1;
   background: radial-gradient(ellipse 35% 42% at 20% 26%, rgba(255, 246, 205, .22), transparent 78%);
   mix-blend-mode: screen;
-  animation: room-daylight 14s ease-in-out infinite alternate;
+  animation: room-daylight 11s ease-in-out infinite alternate;
+}
+
+.scene-room > :is(.scene-flower-wall, .scene-flower-table) {
+  z-index: 2;
+  object-fit: cover;
+}
+
+.scene-room > .scene-flower-wall {
+  -webkit-mask-image: radial-gradient(ellipse 8% 14% at 39% 31%, #000 53%, transparent 100%);
+  mask-image: radial-gradient(ellipse 8% 14% at 39% 31%, #000 53%, transparent 100%);
+  transform-origin: 39% 45%;
+  animation: flowers-wall 6.9s ease-in-out infinite;
+}
+
+.scene-room > .scene-flower-table {
+  -webkit-mask-image: radial-gradient(ellipse 7% 11% at 25% 59%, #000 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse 7% 11% at 25% 59%, #000 55%, transparent 100%);
+  transform-origin: 25% 69%;
+  animation: flowers-table 5.8s ease-in-out infinite;
 }
 
 .scene-room > .scene-spirit-breath {
-  z-index: 2;
+  z-index: 3;
   object-fit: cover;
-  -webkit-mask-image: radial-gradient(ellipse 24% 38% at var(--spirit-x, 61%) 47%, #000 62%, transparent 100%);
-  mask-image: radial-gradient(ellipse 24% 38% at var(--spirit-x, 61%) 47%, #000 62%, transparent 100%);
-  transform-origin: var(--spirit-x, 61%) 68%;
-  animation: spirit-breathe 8.8s ease-in-out infinite;
+  -webkit-mask-image: radial-gradient(ellipse 22% 36% at var(--spirit-x, 61%) 45%, #000 65%, transparent 100%);
+  mask-image: radial-gradient(ellipse 22% 36% at var(--spirit-x, 61%) 45%, #000 65%, transparent 100%);
+  transform-origin: var(--spirit-x, 61%) 67%;
+  animation: spirit-rock 7.2s ease-in-out infinite;
 }
 
 .scene-room > .scene-curtain {
-  z-index: 3;
+  z-index: 4;
   object-fit: cover;
   transform-origin: 15% 5%;
-  animation: curtain-breeze 7.4s ease-in-out infinite;
+  animation: curtain-breeze 6.4s ease-in-out infinite;
 }
 
-.scene-room > .scene-message { z-index: 4; }
-.scene-room[data-motion='paused'] > :is(.scene-window-light, .scene-spirit-breath, .scene-curtain) { animation-play-state: paused; }
+.scene-room > .scene-message { z-index: 5; }
+.scene-room[data-motion='paused'] > :is(.scene-window-light, .scene-flower-wall, .scene-flower-table, .scene-spirit-breath, .scene-curtain) { animation-play-state: paused; }
 
 @media (min-width: 801px) {
   .spirit-layout .scene-room { align-self: start; height: 720px; --spirit-x: 66%; }
   .spirit-layout .scene-room > img { object-position: 22% center; }
 }
 
-@keyframes spirit-breathe {
-  0%, 100% { transform: translateY(0) scale(1); }
-  45% { transform: translateY(-2px) scale(1.008, 1.012); }
-  67% { transform: translateY(-1px) scale(1.005, 1.007); }
+@keyframes spirit-rock {
+  0%, 100% { transform: perspective(900px) rotateX(-3deg) rotateZ(-1deg) translateY(-2px) scale(1.01); }
+  24% { transform: perspective(900px) rotateX(5deg) rotateZ(1.4deg) translateY(6px) scale(.985, .975); }
+  48% { transform: perspective(900px) rotateX(-5deg) rotateZ(-1.7deg) translateY(-4px) scale(1.025, 1.015); }
+  73% { transform: perspective(900px) rotateX(3deg) rotateZ(1deg) translateY(3px) scale(.994, .986); }
 }
 
 @keyframes curtain-breeze {
   0%, 100% { transform: translateX(0) rotate(0); }
-  42% { transform: translateX(3px) rotate(.25deg); }
-  72% { transform: translateX(1px) rotate(-.15deg); }
+  31% { transform: translateX(11px) rotate(1.1deg); }
+  59% { transform: translateX(5px) rotate(-.3deg); }
+  81% { transform: translateX(15px) rotate(1.4deg); }
+}
+
+@keyframes flowers-wall {
+  0%, 100% { transform: rotate(-1deg) translateX(-2px); }
+  29% { transform: rotate(2.5deg) translateX(5px); }
+  63% { transform: rotate(.4deg) translateX(1px); }
+  84% { transform: rotate(3deg) translateX(6px); }
+}
+
+@keyframes flowers-table {
+  0%, 100% { transform: rotate(.5deg) translateX(0); }
+  36% { transform: rotate(-2.5deg) translateX(-4px); }
+  70% { transform: rotate(1.8deg) translateX(3px); }
 }
 
 @keyframes room-daylight {
@@ -58,6 +94,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scene-room > :is(.scene-window-light, .scene-spirit-breath, .scene-curtain) { animation: none; }
+  .scene-room > :is(.scene-window-light, .scene-flower-wall, .scene-flower-table, .scene-spirit-breath, .scene-curtain) { animation: none; }
   .scene-room > .scene-window-light { opacity: .45; }
 }
