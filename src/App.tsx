@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, useState, type FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { addEntry, dailyMessage, emptyJournal, seedBalance, localDateKey, rangeStartDate, updateEntry, upsertWeight, weightRewardReason, type Entry, type EntryInput, type EntryKind, type JournalState, type WeightUnit } from './domain'
+import { addEntry, dailyMessage, emptyJournal, seedBalance, seedCatalog, localDateKey, rangeStartDate, updateEntry, upsertWeight, weightRewardReason, type Entry, type EntryInput, type EntryKind, type JournalState, type WeightUnit } from './domain'
 import { EntryDrawer, Photo, Scene, WeightChart, WeightDialog } from './components'
 import { formatDate, formatWeight, labels } from './presentation'
 import { exportJournal, loadJournal, saveJournal } from './storage'
@@ -72,7 +72,7 @@ export default function App() {
     })
   }, [userId])
   useEffect(() => { const pop = () => setPath(location.pathname); addEventListener('popstate', pop); return () => removeEventListener('popstate', pop) }, [])
-  useEffect(() => { if (!notice) return; const timer = setTimeout(() => { setNotice(''); setDeleted(null) }, 6000); return () => clearTimeout(timer) }, [notice])
+  useEffect(() => { if (!notice) return; const timer = setTimeout(() => { setNotice(''); setDeleted(null) }, notice.startsWith('Unlock expired:') ? 12000 : 6000); return () => clearTimeout(timer) }, [notice])
   useEffect(() => { if (!reward) return; const timer = setTimeout(() => setReward(null), 6500); return () => clearTimeout(timer) }, [reward])
   const go = (to: string) => { if (path === '/help-me-pause' && supportStep === 'feeling' && (feeling || note.trim()) && to !== '/help-me-pause' && !window.confirm('Leave without saving your feeling note?')) return; history.pushState({}, '', to); setPath(to); setMobileMenuOpen(false); scrollTo(0, 0) }
   const openGoal = () => { go('/spirit-room'); requestAnimationFrame(() => document.getElementById('weight-goal')?.scrollIntoView({ behavior: 'smooth', block: 'start' })) }
@@ -116,14 +116,24 @@ export default function App() {
     const next = upsertWeight(journal, { date, value, unit }, now)
     await commit(next)
     const reason = weightRewardReason(journal, next, date, now)
+    const beforeAmount = journal.weightSeedGrants.find((grant) => grant.date === date)?.amount ?? 0
+    const afterAmount = next.weightSeedGrants.find((grant) => grant.date === date)?.amount ?? 0
+    const removed = beforeAmount - afterAmount
+    const invalidated = journal.seedUnlocks.filter((unlock) => !next.seedUnlocks.some((item) => item.itemId === unlock.itemId))
+    const invalidatedNames = invalidated.map((unlock) => seedCatalog.find((item) => item.id === unlock.itemId)?.name ?? 'A collection item').join(', ')
+    const returned = invalidated.reduce((sum, unlock) => sum + unlock.cost, 0)
     const messages = {
       earned: 'Weight saved.',
+      'corrected-down': invalidated.length
+        ? `Unlock expired: ${invalidatedNames}. Correcting today’s weight removed ${removed} Light Seed${removed === 1 ? '' : 's'}; ${returned} spent Seeds were returned. You can unlock ${invalidated.length === 1 ? 'it' : 'them'} again later.`
+        : `Weight corrected. ${removed} Light Seed${removed === 1 ? '' : 's'} removed to match today’s record.`,
+      'corrected-unchanged': 'Weight corrected. Your Light Seeds are unchanged.',
       'past-date': 'Weight saved to your chart. Past dates do not award Light Seeds.',
       'no-goal': noGoalWeightMessage,
-      'already-awarded-today': 'Weight updated. You have already earned today’s weight-progress Seeds.',
       'not-closer': 'Weight saved. Seeds appear when a new record is at least 0.1 kg closer to your target.',
     }
-    announceSave(next, 'goal', messages[reason])
+    if (afterAmount > beforeAmount) { setNotice(''); setDeleted(null); setReward({ id: crypto.randomUUID(), amount: afterAmount - beforeAmount, kind: 'goal', balance: seedBalance(next) }) }
+    else { setReward(null); setNotice(messages[reason]) }
   }
   const deleteEntry = async (entry: Entry) => { try { await commit({ ...journal, entries: journal.entries.filter((item) => item.id !== entry.id) }); setDeleted(entry); setNotice('Entry removed.') } catch { setNotice('Could not remove this entry. Please try again.') } }
   const dayEntries = journal.entries.filter((entry) => entry.date === date).sort((a, b) => a.createdAt.localeCompare(b.createdAt))

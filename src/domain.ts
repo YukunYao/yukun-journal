@@ -20,6 +20,7 @@ export interface WeightRecord { date: string; value: number; unit: WeightUnit; k
 export interface SeedGrant { date: string; kind: EntryKind; amount: number }
 export interface SeedUnlock { itemId: string; cost: number; unlockdAt: string }
 export interface WeightGoal { targetKg: number; baselineKg: number; closestKg: number; awardedSteps: number }
+export interface WeightSeedGrant { date: string; amount: number; targetKg?: number; baselineKg?: number; basisKg?: number; basisSteps?: number }
 export const seedCatalog = [
   { id: 'rose-scarf', name: 'Rose scarf', category: 'outfit', cost: 10, image: '/assets/room-scarf.png' },
   { id: 'blue-sleep-cap', name: 'Blue sleep cap', category: 'outfit', cost: 20, image: '/assets/room-hat.png' },
@@ -35,7 +36,7 @@ export interface JournalState {
   equippedOutfit: string | null
   equippedDecor: string | null
   weightGoal: WeightGoal | null
-  weightSeedGrants: { date: string; amount: number }[]
+  weightSeedGrants: WeightSeedGrant[]
 }
 
 export function emptyJournal(): JournalState {
@@ -74,6 +75,7 @@ export function setWeightGoal(state: JournalState, target: number, unit: WeightU
   const latest = weights[0]
   if (!latest) throw new Error('Log a current weight before setting a goal.')
   const targetKg = unit === 'lb' ? target * 0.45359237 : target
+  if (state.weightGoal && Math.abs(state.weightGoal.targetKg - targetKg) < 0.000001) return state
   if (Math.abs(latest.kg - targetKg) < 0.1) throw new Error('Choose a target at least 0.1 kg from your current record.')
   const prior = !state.weightGoal && latest.date === localDateKey(now) ? weights[1] : undefined
   const baselineKg = prior?.kg ?? latest.kg
@@ -83,7 +85,7 @@ export function setWeightGoal(state: JournalState, target: number, unit: WeightU
   return {
     ...state,
     weightGoal: { targetKg, baselineKg, closestKg: amount ? latest.kg : baselineKg, awardedSteps: amount ? steps : 0 },
-    weightSeedGrants: amount ? [...state.weightSeedGrants, { date: latest.date, amount }] : state.weightSeedGrants,
+    weightSeedGrants: amount ? [...state.weightSeedGrants, { date: latest.date, amount, targetKg, baselineKg, basisKg: baselineKg, basisSteps: 0 }] : state.weightSeedGrants,
   }
 }
 
@@ -133,23 +135,55 @@ export function upsertWeight(state: JournalState, input: { date: string; value: 
   const record: WeightRecord = { ...input, kg: input.unit === 'lb' ? input.value * 0.45359237 : input.value, updatedAt: now.toISOString() }
   const next = { ...state, weights: [...state.weights.filter((item) => item.date !== input.date), record].sort((a, b) => a.date.localeCompare(b.date)) }
   const goal = state.weightGoal
-  if (!goal || input.date !== localDateKey(now) || state.weightSeedGrants.some((grant) => grant.date === input.date)) return next
-  const oldDistance = Math.abs(goal.closestKg - goal.targetKg)
-  const newDistance = Math.abs(record.kg - goal.targetKg)
-  if (newDistance >= oldDistance - 0.099999) return next
-  const totalSteps = Math.floor((Math.abs(goal.baselineKg - goal.targetKg) - newDistance + 0.000001) / 0.1)
-  const amount = Math.min(5, Math.max(0, totalSteps - goal.awardedSteps))
-  if (!amount) return next
-  return { ...next, weightGoal: { ...goal, closestKg: record.kg, awardedSteps: totalSteps }, weightSeedGrants: [...state.weightSeedGrants, { date: input.date, amount }] }
+  if (!goal || input.date !== localDateKey(now)) return next
+  const previousGrant = state.weightSeedGrants.find((grant) => grant.date === input.date)
+  const previousBest = [goal.baselineKg, ...state.weights.filter((item) => item.date < input.date).map((item) => item.kg)]
+    .reduce((best, kg) => Math.abs(kg - goal.targetKg) < Math.abs(best - goal.targetKg) ? kg : best, goal.baselineKg)
+  const targetKg = previousGrant?.targetKg ?? goal.targetKg
+  const baselineKg = previousGrant?.baselineKg ?? goal.baselineKg
+  const basisKg = previousGrant?.basisKg ?? (previousGrant ? previousBest : goal.closestKg)
+  const basisSteps = previousGrant?.basisSteps ?? (previousGrant
+    ? Math.max(0, Math.floor((Math.abs(baselineKg - targetKg) - Math.abs(basisKg - targetKg) + 0.000001) / 0.1))
+    : goal.awardedSteps)
+  const totalSteps = Math.max(0, Math.floor((Math.abs(baselineKg - targetKg) - Math.abs(record.kg - targetKg) + 0.000001) / 0.1))
+  const steps = Math.max(0, totalSteps - basisSteps)
+  const amount = Math.min(5, steps)
+  if (!previousGrant && !amount) return next
+  const weightSeedGrants = state.weightSeedGrants.filter((grant) => grant.date !== input.date)
+  if (amount) weightSeedGrants.push({ date: input.date, amount, targetKg, baselineKg, basisKg, basisSteps })
+  const adjusted: JournalState = {
+    ...next,
+    weightGoal: targetKg === goal.targetKg
+      ? { ...goal, closestKg: amount ? record.kg : basisKg, awardedSteps: amount ? totalSteps : basisSteps }
+      : state.weights.some((item) => item.date === input.date && Math.abs(item.kg - goal.baselineKg) < 0.000001)
+        ? { ...goal, baselineKg: record.kg, closestKg: record.kg }
+        : goal,
+    weightSeedGrants,
+  }
+  if (!previousGrant || amount >= previousGrant.amount || seedBalance(adjusted) >= 0) return adjusted
+  const seedUnlocks = [...adjusted.seedUnlocks]
+  let balance = seedBalance(adjusted)
+  let equippedOutfit = adjusted.equippedOutfit
+  let equippedDecor = adjusted.equippedDecor
+  while (balance < 0 && seedUnlocks.length) {
+    const invalidated = seedUnlocks.pop()!
+    balance += invalidated.cost
+    if (equippedOutfit === invalidated.itemId) equippedOutfit = null
+    if (equippedDecor === invalidated.itemId) equippedDecor = null
+  }
+  return { ...adjusted, seedUnlocks, equippedOutfit, equippedDecor }
 }
 
-export type WeightRewardReason = 'earned' | 'past-date' | 'no-goal' | 'already-awarded-today' | 'not-closer'
+export type WeightRewardReason = 'earned' | 'corrected-down' | 'corrected-unchanged' | 'past-date' | 'no-goal' | 'not-closer'
 
 export function weightRewardReason(before: JournalState, after: JournalState, date: string, now = new Date()): WeightRewardReason {
-  if (seedBalance(after) > seedBalance(before)) return 'earned'
+  const beforeAmount = before.weightSeedGrants.find((grant) => grant.date === date)?.amount ?? 0
+  const afterAmount = after.weightSeedGrants.find((grant) => grant.date === date)?.amount ?? 0
+  if (afterAmount > beforeAmount) return 'earned'
+  if (afterAmount < beforeAmount) return 'corrected-down'
   if (date !== localDateKey(now)) return 'past-date'
   if (!before.weightGoal) return 'no-goal'
-  if (before.weightSeedGrants.some((grant) => grant.date === date)) return 'already-awarded-today'
+  if (before.weights.some((weight) => weight.date === date)) return 'corrected-unchanged'
   return 'not-closer'
 }
 
