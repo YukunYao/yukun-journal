@@ -21,7 +21,7 @@ A gentle, English-language journaling website for meals, movement, mood, cycle n
 
 ![YUKUN My Day preview with example entries](docs/screenshots/my-day.png)
 
-**Preview boundary:** Anonymous records and photos are stored in the visitor’s browser with IndexedDB. Clearing site data or switching devices can remove them. With Supabase configured, a signed-in person may choose a separate cloud journal; the local copy is never deleted automatically. There is no youth journal or clinical service. The private journal in this development preview requires an adult self-declaration; this is not a production age-verification system.
+**Preview boundary:** Anonymous records and photos are stored in the visitor’s browser with IndexedDB. Clearing site data or switching devices can remove them. My Day can export a JSON backup and restore it into this browser after a file preview and explicit replacement confirmation; restoration does not modify a separate cloud journal. With Supabase configured, a signed-in person may choose a separate cloud journal; the local copy is never deleted automatically. There is no youth journal or clinical service. The private journal in this development preview requires an adult self-declaration; this is not a production age-verification system.
 
 ## Run locally
 
