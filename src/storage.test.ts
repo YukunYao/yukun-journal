@@ -1,6 +1,7 @@
+import 'fake-indexeddb/auto'
 import { describe, expect, it } from 'vitest'
 import { emptyJournal } from './domain'
-import { parseJournalExport } from './storage'
+import { deleteJournal, loadJournal, parseJournalExport, saveJournal } from './storage'
 
 const wrap = (journal: unknown) => JSON.stringify({ format: 'yukun-local-export', version: 1, exportedAt: '2026-11-19T12:00:00.000Z', journal })
 
@@ -32,5 +33,13 @@ describe('journal backup restore', () => {
   it('rejects broken records and photo data', () => {
     expect(() => parseJournalExport(wrap({ ...emptyJournal(), weights: [{ date: '2026-11-18', value: '58', unit: 'kg', kg: 58 }] }))).toThrow(/weight/i)
     expect(() => parseJournalExport(wrap({ ...emptyJournal(), entries: [{ id: 'x', kind: 'meal', date: '2026-11-18', title: 'Soup', createdAt: '2026-11-18T12:00:00Z', updatedAt: '2026-11-18T12:00:00Z', photo: 'https://example.com/photo' }] }))).toThrow(/photo/i)
+  })
+})
+
+describe('browser journal deletion', () => {
+  it('removes the saved journal so loading returns a fresh empty journal', async () => {
+    await saveJournal({ ...emptyJournal(), spiritName: 'Pip', weights: [{ date: '2026-11-18', value: 58.25, unit: 'kg', kg: 58.25, updatedAt: '2026-11-18T12:00:00Z' }] })
+    await deleteJournal()
+    expect(await loadJournal()).toEqual(emptyJournal())
   })
 })

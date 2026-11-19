@@ -1,0 +1,5 @@
+.delete-dialog .delete-scope{padding:15px 17px;border:1px solid #e8d9d3;background:#f8efeb;color:#5c4d45;font-size:.87rem}
+.delete-export{margin:4px 0 20px;color:#a55b5b}
+.delete-confirm{font-size:.83rem}.delete-confirm input{margin-top:3px}
+.delete-action{border:1px solid #a75c61;border-radius:4px;background:#a75c61;color:#fff;padding:11px 18px;min-height:43px}
+.delete-action:disabled{opacity:.45;cursor:not-allowed}.delete-action:hover:not(:disabled){background:#8e454b}

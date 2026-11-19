@@ -24,3 +24,4 @@
 .service-page .check-row input{width:18px;height:18px;flex:none;accent-color:#bb7774;margin:1px 0 0}
 .price-panel .button{display:block;margin:20px 0 5px}
 @media(max-width:800px){.mobile-account{display:block}.service-auth-grid{grid-template-columns:1fr;gap:20px}.service-auth-grid>div{border-left:0;border-top:1px solid var(--line);padding:25px 0 0}.plan-card dl{grid-template-columns:1fr}}
+.browser-data{border-top:1px solid var(--line);margin-top:35px;padding-top:24px;max-width:680px}.browser-data .eyebrow{margin-bottom:8px}.browser-data h2{margin-bottom:12px}.browser-data p{color:#786c64}.browser-data>.text-button{color:#a55b5b;margin-bottom:12px}.browser-data .fine-print{font-size:.77rem}

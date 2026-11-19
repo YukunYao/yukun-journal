@@ -38,6 +38,19 @@ export async function saveJournal(state: JournalState): Promise<void> {
   } finally { db.close() }
 }
 
+export async function deleteJournal(): Promise<void> {
+  const db = await openDatabase()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction(STORE, 'readwrite')
+      transaction.objectStore(STORE).delete('current')
+      transaction.oncomplete = () => resolve()
+      transaction.onerror = () => reject(transaction.error ?? new Error('Could not delete your browser journal.'))
+      transaction.onabort = () => reject(transaction.error ?? new Error('Could not delete your browser journal.'))
+    })
+  } finally { db.close() }
+}
+
 function blobAsDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()

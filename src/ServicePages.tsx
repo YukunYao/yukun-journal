@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import type { JournalState } from './domain'
 import { eligibility, type PlanAnswers } from './plan-safety'
 import { supabase, servicesConfigured } from './services'
+import { DeleteJournalDialog } from './DeleteJournalDialog'
 
 export interface CloudActions {
   mode: 'local' | 'cloud'
@@ -11,6 +12,7 @@ export interface CloudActions {
   copyLocal: () => Promise<void>
   createCloud: () => Promise<void>
   useLocal: () => void
+  deleteLocal: () => Promise<void>
   cloudExists: boolean | null
   busy: boolean
 }
@@ -21,6 +23,7 @@ export function AccountPage({ session, actions, onNavigate }: { session: Session
   const [message, setMessage] = useState('')
   const [working, setWorking] = useState(false)
   const [formMode, setFormMode] = useState<'signin' | 'signup'>('signin')
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const submit = async (event: FormEvent<HTMLFormElement>, signup: boolean) => {
     event.preventDefault()
     if (!supabase) return
@@ -29,7 +32,7 @@ export function AccountPage({ session, actions, onNavigate }: { session: Session
     setMessage(result.error?.message ?? (signup && !result.data.session ? 'Check your email to confirm your account, then sign in.' : 'Signed in. Choose where to keep your journal below.'))
     setWorking(false)
   }
-  const hasLocal = actions.local.entries.length > 0 || actions.local.weights.length > 0 || Boolean(actions.local.spiritName)
+  const hasLocal = actions.local.entries.length > 0 || actions.local.weights.length > 0 || actions.local.seedLedger.length > 0 || actions.local.seedUnlocks.length > 0 || actions.local.weightSeedGrants.length > 0 || Boolean(actions.local.spiritName) || Boolean(actions.local.weightGoal) || Boolean(actions.local.equippedOutfit) || Boolean(actions.local.equippedDecor)
   return <main className="content-page reading-page service-page"><p className="eyebrow">Your space</p><h1>Account & cloud</h1>
     {!servicesConfigured && <><p className="lead">Accounts are waiting for the YUKUN cloud project to be connected.</p><p>Your journal remains available in this browser. Export a copy from My Day if you want a backup.</p></>}
     {servicesConfigured && !session && <><p className="lead">Sign in to save a separate cloud journal and return to it on another device.</p><div className="service-auth-grid"><form onSubmit={(event) => submit(event, formMode === 'signup')}><h2>{formMode === 'signup' ? 'Create account' : 'Sign in'}</h2><label>Email<input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label><label>Password<input type="password" autoComplete={formMode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} /></label><button className="button primary" disabled={working}>{formMode === 'signup' ? 'Create free account' : 'Sign in'}</button></form><div><h2>{formMode === 'signup' ? 'Already have an account?' : 'New here?'}</h2><p>Your local journal stays on this device until you choose to copy it to your account.</p><button className="button outline" onClick={() => { setFormMode(formMode === 'signup' ? 'signin' : 'signup'); setMessage('') }}>{formMode === 'signup' ? 'Use sign in' : 'Create an account'}</button></div></div></>}
@@ -41,8 +44,10 @@ export function AccountPage({ session, actions, onNavigate }: { session: Session
         {actions.cloudExists === null && <p>Checking your cloud journal…</p>}
       </>}
     </div><p className="fine-print">If a cloud journal already exists, this page will not overwrite it. Photos are copied into a private account folder. Keep a local export as an extra backup.</p><button className="text-button" onClick={async () => { await supabase?.auth.signOut(); actions.useLocal(); onNavigate('/my-day') }}>Sign out</button></>}
+    <section className="browser-data"><p className="eyebrow">On this device</p><h2>Browser journal</h2><p>{hasLocal ? `${actions.local.entries.length} ${actions.local.entries.length === 1 ? 'entry' : 'entries'} · ${actions.local.weights.length} ${actions.local.weights.length === 1 ? 'weigh-in' : 'weigh-ins'}. Your companion, Light Seeds, and photos are part of this local copy.` : 'There is no journal saved in this browser yet.'}</p>{hasLocal && <button className="text-button" onClick={() => setDeleteOpen(true)}>Delete this browser’s journal</button>}<p className="fine-print">This controls only the copy in this browser. It does not delete an account or a separate cloud journal.</p></section>
     {message && <p role="status" className="service-message">{message}</p>}
     <p><button className="text-button" onClick={() => onNavigate('/my-day')}>← Return to My Day</button></p>
+    {deleteOpen && <DeleteJournalDialog journal={actions.local} onDelete={actions.deleteLocal} onClose={() => setDeleteOpen(false)} />}
   </main>
 }
 
