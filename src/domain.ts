@@ -21,6 +21,8 @@ export interface SeedGrant { date: string; kind: EntryKind; amount: number }
 export interface SeedUnlock { itemId: string; cost: number; unlockdAt: string }
 export interface WeightGoal { targetKg: number; baselineKg: number; closestKg: number; awardedSteps: number }
 export interface WeightSeedGrant { date: string; amount: number; targetKg?: number; baselineKg?: number; basisKg?: number; basisSteps?: number }
+export interface PersonalPlan { foodRhythm: string; movement: string; recovery: string; weeklyFocus: string; updatedAt: string }
+export type PersonalPlanSections = Omit<PersonalPlan, 'updatedAt'>
 export const seedCatalog = [
   { id: 'rose-scarf', name: 'Rose scarf', category: 'outfit', cost: 10, image: '/assets/room-scarf.png' },
   { id: 'blue-sleep-cap', name: 'Blue sleep cap', category: 'outfit', cost: 20, image: '/assets/room-hat.png' },
@@ -37,15 +39,27 @@ export interface JournalState {
   equippedDecor: string | null
   weightGoal: WeightGoal | null
   weightSeedGrants: WeightSeedGrant[]
+  personalPlan: PersonalPlan | null
 }
 
 export function emptyJournal(): JournalState {
-  return { entries: [], weights: [], seedLedger: [], spiritName: '', seedUnlocks: [], equippedOutfit: null, equippedDecor: null, weightGoal: null, weightSeedGrants: [] }
+  return { entries: [], weights: [], seedLedger: [], spiritName: '', seedUnlocks: [], equippedOutfit: null, equippedDecor: null, weightGoal: null, weightSeedGrants: [], personalPlan: null }
 }
 
 export function normalizeJournal(value: Partial<JournalState> | null | undefined): JournalState {
   const legacyUnlocks = (value as Partial<JournalState> & { seedPurchases?: SeedUnlock[] } | undefined)?.seedPurchases
-  return { ...emptyJournal(), ...value, seedUnlocks: value?.seedUnlocks ?? legacyUnlocks ?? [], weightSeedGrants: value?.weightSeedGrants ?? [] }
+  return { ...emptyJournal(), ...value, seedUnlocks: value?.seedUnlocks ?? legacyUnlocks ?? [], weightSeedGrants: value?.weightSeedGrants ?? [], personalPlan: value?.personalPlan ?? null }
+}
+
+export function setPersonalPlan(state: JournalState, sections: PersonalPlanSections, now = new Date()): JournalState {
+  const trimmed = {
+    foodRhythm: sections.foodRhythm.trim(),
+    movement: sections.movement.trim(),
+    recovery: sections.recovery.trim(),
+    weeklyFocus: sections.weeklyFocus.trim(),
+  }
+  if (Object.values(trimmed).some((value) => value.length > 500)) throw new Error('Keep each plan section under 500 characters.')
+  return { ...state, personalPlan: Object.values(trimmed).some(Boolean) ? { ...trimmed, updatedAt: now.toISOString() } : null }
 }
 
 export function seedBalance(state: JournalState): number {

@@ -34,6 +34,12 @@ describe('journal backup restore', () => {
     expect(() => parseJournalExport(wrap({ ...emptyJournal(), weights: [{ date: '2026-11-18', value: '58', unit: 'kg', kg: 58 }] }))).toThrow(/weight/i)
     expect(() => parseJournalExport(wrap({ ...emptyJournal(), entries: [{ id: 'x', kind: 'meal', date: '2026-11-18', title: 'Soup', createdAt: '2026-11-18T12:00:00Z', updatedAt: '2026-11-18T12:00:00Z', photo: 'https://example.com/photo' }] }))).toThrow(/photo/i)
   })
+
+  it('restores a saved personal plan and rejects malformed plan sections', () => {
+    const personalPlan = { foodRhythm: 'Regular meals', movement: '', recovery: 'Rest', weeklyFocus: 'Keep it gentle', updatedAt: '2026-11-19T12:00:00.000Z' }
+    expect(parseJournalExport(wrap({ ...emptyJournal(), personalPlan })).personalPlan).toEqual(personalPlan)
+    expect(() => parseJournalExport(wrap({ ...emptyJournal(), personalPlan: { ...personalPlan, movement: 42 } }))).toThrow(/plan/i)
+  })
 })
 
 describe('browser journal deletion', () => {

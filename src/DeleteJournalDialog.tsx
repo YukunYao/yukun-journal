@@ -21,7 +21,7 @@ export function DeleteJournalDialog({ journal, onDelete, onClose }: { journal: J
   return <dialog ref={dialog} className="restore-dialog delete-dialog" onCancel={(event) => { if (busy) event.preventDefault(); else onClose() }} aria-labelledby="delete-title">
     <div className="restore-head"><p className="eyebrow">This browser only</p><button className="text-button" type="button" onClick={close} aria-label="Close delete dialog">✕</button></div>
     <h2 id="delete-title">Delete this journal?</h2>
-    <p>This will remove the journal stored in this browser: {journal.entries.length} {journal.entries.length === 1 ? 'entry' : 'entries'}, {journal.weights.length} {journal.weights.length === 1 ? 'weigh-in' : 'weigh-ins'}, photos, Light Seeds, and your companion’s room choices.</p>
+    <p>This will remove the journal stored in this browser: {journal.entries.length} {journal.entries.length === 1 ? 'entry' : 'entries'}, {journal.weights.length} {journal.weights.length === 1 ? 'weigh-in' : 'weigh-ins'}, photos, Light Seeds, your personal plan, and your companion’s room choices.</p>
     <p className="delete-scope">A separate cloud journal and your account will remain untouched. To recover this browser journal later, export a copy before deleting it.</p>
     <button className="text-button delete-export" type="button" disabled={busy} onClick={async () => { try { await exportJournal(journal) } catch { setError('Could not export a copy. Please try again before deleting.') } }}>Export a copy first</button>
     <label className="delete-confirm">Type DELETE to confirm<input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} autoComplete="off" disabled={busy} /></label>

@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { addEntry, dailyMessage, emptyJournal, localDateKey, rangeStartDate, upsertWeight } from './domain'
+import { addEntry, dailyMessage, emptyJournal, localDateKey, normalizeJournal, rangeStartDate, setPersonalPlan, upsertWeight } from './domain'
 
 describe('journal rules', () => {
+  it('saves a trimmed self-written plan and clears it when all sections are blank', () => {
+    const now = new Date('2026-11-19T12:00:00.000Z')
+    const saved = setPersonalPlan(emptyJournal(), { foodRhythm: '  Regular meals  ', movement: '', recovery: '  Rest  ', weeklyFocus: '  ' }, now)
+    expect(saved.personalPlan).toEqual({ foodRhythm: 'Regular meals', movement: '', recovery: 'Rest', weeklyFocus: '', updatedAt: '2026-11-19T12:00:00.000Z' })
+    expect(setPersonalPlan(saved, { foodRhythm: ' ', movement: '', recovery: '', weeklyFocus: '' }, now).personalPlan).toBeNull()
+    expect(normalizeJournal({ entries: [], weights: [] }).personalPlan).toBeNull()
+  })
+
+  it('rejects an overlong self-written plan section', () => {
+    expect(() => setPersonalPlan(emptyJournal(), { foodRhythm: 'a'.repeat(501), movement: '', recovery: '', weeklyFocus: '' })).toThrow(/500/)
+  })
   it('uses the local calendar day instead of UTC', () => {
     expect(localDateKey(new Date(2026, 10, 16, 23, 30))).toBe('2026-11-16')
   })

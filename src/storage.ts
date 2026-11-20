@@ -108,6 +108,9 @@ export function parseJournalExport(text: string): JournalState {
     if (!record(source.weightGoal) || !finite(source.weightGoal.targetKg) || !finite(source.weightGoal.baselineKg) || !finite(source.weightGoal.closestKg) || !finite(source.weightGoal.awardedSteps)) throw new Error('This backup has an invalid weight goal.')
   }
   if ((source.equippedOutfit !== undefined && source.equippedOutfit !== null && typeof source.equippedOutfit !== 'string') || (source.equippedDecor !== undefined && source.equippedDecor !== null && typeof source.equippedDecor !== 'string')) throw new Error('This backup has invalid room choices.')
+  if (source.personalPlan !== undefined && source.personalPlan !== null) {
+    if (!record(source.personalPlan) || typeof source.personalPlan.updatedAt !== 'string' || !['foodRhythm', 'movement', 'recovery', 'weeklyFocus'].every((key) => typeof (source.personalPlan as Record<string, unknown>)[key] === 'string' && ((source.personalPlan as Record<string, string>)[key]).length <= 500)) throw new Error('This backup has an invalid personal plan.')
+  }
   return normalizeJournal({ ...source, entries } as unknown as JournalState)
 }
 

@@ -4,6 +4,7 @@ import type { JournalState } from './domain'
 import { eligibility, type PlanAnswers } from './plan-safety'
 import { supabase, servicesConfigured } from './services'
 import { DeleteJournalDialog } from './DeleteJournalDialog'
+import { PersonalPlanEditor } from './PersonalPlanEditor'
 
 export interface CloudActions {
   mode: 'local' | 'cloud'
@@ -32,7 +33,7 @@ export function AccountPage({ session, actions, onNavigate }: { session: Session
     setMessage(result.error?.message ?? (signup && !result.data.session ? 'Check your email to confirm your account, then sign in.' : 'Signed in. Choose where to keep your journal below.'))
     setWorking(false)
   }
-  const hasLocal = actions.local.entries.length > 0 || actions.local.weights.length > 0 || actions.local.seedLedger.length > 0 || actions.local.seedUnlocks.length > 0 || actions.local.weightSeedGrants.length > 0 || Boolean(actions.local.spiritName) || Boolean(actions.local.weightGoal) || Boolean(actions.local.equippedOutfit) || Boolean(actions.local.equippedDecor)
+  const hasLocal = actions.local.entries.length > 0 || actions.local.weights.length > 0 || actions.local.seedLedger.length > 0 || actions.local.seedUnlocks.length > 0 || actions.local.weightSeedGrants.length > 0 || Boolean(actions.local.spiritName) || Boolean(actions.local.weightGoal) || Boolean(actions.local.equippedOutfit) || Boolean(actions.local.equippedDecor) || Boolean(actions.local.personalPlan)
   return <main className="content-page reading-page service-page"><p className="eyebrow">Your space</p><h1>Account & cloud</h1>
     {!servicesConfigured && <><p className="lead">Accounts are waiting for the YUKUN cloud project to be connected.</p><p>Your journal remains available in this browser. Export a copy from My Day if you want a backup.</p></>}
     {servicesConfigured && !session && <><p className="lead">Sign in to save a separate cloud journal and return to it on another device.</p><div className="service-auth-grid"><form onSubmit={(event) => submit(event, formMode === 'signup')}><h2>{formMode === 'signup' ? 'Create account' : 'Sign in'}</h2><label>Email<input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label><label>Password<input type="password" autoComplete={formMode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} /></label><button className="button primary" disabled={working}>{formMode === 'signup' ? 'Create free account' : 'Sign in'}</button></form><div><h2>{formMode === 'signup' ? 'Already have an account?' : 'New here?'}</h2><p>Your local journal stays on this device until you choose to copy it to your account.</p><button className="button outline" onClick={() => { setFormMode(formMode === 'signup' ? 'signin' : 'signup'); setMessage('') }}>{formMode === 'signup' ? 'Use sign in' : 'Create an account'}</button></div></div></>}
@@ -54,7 +55,7 @@ export function AccountPage({ session, actions, onNavigate }: { session: Session
 const initialAnswers: PlanAnswers = { age: 18, consent: false, pregnant: false, breastfeeding: false, postpartumNeedsCare: false, currentEatingDisorder: false, medicalConcern: false, goal: '', routine: '' }
 type GeneratedPlan = { title: string; foodRhythm: string; movement: string; recovery: string; weeklyFocus: string; rationale: string; caution: string }
 
-export function AiPlanPage({ session, onNavigate }: { session: Session | null; onNavigate: (path: string) => void }) {
+export function AiPlanPage({ session, journal, onSave, onNavigate }: { session: Session | null; journal: JournalState; onSave: (next: JournalState) => Promise<void>; onNavigate: (path: string) => void }) {
   const [answers, setAnswers] = useState(initialAnswers)
   const [plan, setPlan] = useState<GeneratedPlan | null>(null)
   const [error, setError] = useState('')
@@ -73,10 +74,12 @@ export function AiPlanPage({ session, onNavigate }: { session: Session | null; o
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Plan unavailable.') }
     finally { setWorking(false) }
   }
-  return <main className="content-page reading-page service-page"><p className="eyebrow">Optional guidance</p><h1>AI Plan</h1><p className="lead">A flexible weekly framework can sit beside your journal. Recording never requires a plan.</p>
-    {!session ? <><p>Sign in before sharing health answers for a plan.</p><button className="button primary" onClick={() => onNavigate('/account')}>Go to account</button></> : <>
+  return <main className="content-page reading-page service-page"><p className="eyebrow">Optional guidance</p><h1>Plans & guidance</h1><p className="lead">A flexible framework can sit beside your journal. Recording never requires a plan.</p>
+    <PersonalPlanEditor journal={journal} onSave={onSave} />
+    <section className="ai-plan-section"><p className="eyebrow">Optional AI guidance</p><h2>AI plan</h2>
+    {!session ? <><p>AI generation is being prepared. Your own plan above works now, without an account.</p><p className="fine-print">When this service opens, you will sign in and answer a separate health questionnaire before generating a plan.</p>{servicesConfigured && <button className="button outline" onClick={() => onNavigate('/account')}>Go to account</button>}</> : <>
       {plan && <section className="plan-card"><h2>{plan.title}</h2><dl>{([['Food rhythm', plan.foodRhythm], ['Movement', plan.movement], ['Recovery', plan.recovery], ['This week', plan.weeklyFocus], ['Why this fits', plan.rationale]] as const).map(([key,value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><p className="fine-print">{plan.caution}</p></section>}
       <form onSubmit={generate} className="plan-questionnaire"><h2>{plan ? 'Request a new plan' : 'Before a plan'}</h2><p>These answers are sent only when you press Generate. Your journal entries are not sent.</p><label>Age<input type="number" min="13" max="120" value={answers.age} onChange={(e) => setAnswers((v) => ({ ...v, age: Number(e.target.value) }))} required /></label><label>What would you like help with?<textarea maxLength={500} value={answers.goal} onChange={(e) => setAnswers((v) => ({ ...v, goal: e.target.value }))} required /></label><label>What does your current routine look like?<textarea maxLength={500} value={answers.routine} onChange={(e) => setAnswers((v) => ({ ...v, routine: e.target.value }))} required /></label><fieldset><legend>Health & safety</legend>{([['pregnant','I am pregnant'],['breastfeeding','I am breastfeeding'],['postpartumNeedsCare','I am postpartum and need medical guidance'],['currentEatingDisorder','I currently have an eating disorder or significant eating concerns'],['medicalConcern','I have another health concern that needs medical guidance']] as const).map(([field,label]) => <label className="check-row" key={field}><input type="checkbox" checked={answers[field]} onChange={(e) => setFlag(field,e.target.checked)} />{label}</label>)}</fieldset><label className="check-row"><input type="checkbox" checked={answers.consent} onChange={(e) => setFlag('consent',e.target.checked)} />I choose to share these answers with the AI plan service.</label>{answers.consent && !checked.eligible && <p className="service-message">{checked.message}</p>}<button className="button primary" disabled={working || !checked.eligible || !answers.goal.trim() || !answers.routine.trim()}>{working ? 'Preparing…' : 'Generate a gentle plan'}</button>{error && <p className="form-error" role="alert">{error}</p>}</form>
-    </>}
+    </>}</section>
   </main>
 }
