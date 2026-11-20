@@ -17,6 +17,7 @@ A gentle, English-language journaling website for meals, movement, mood, cycle n
 - Structured “Help me pause” choices and a JSON export of local records and photos.
 - Responsive desktop and mobile browser layouts.
 - Optional email account and separate cloud journal once Supabase is configured. An explicit action copies the local journal; signing in alone never migrates it.
+- An optional self-written plan for food rhythm, movement, recovery, and this week's focus. It works in an anonymous browser journal and is included in backups; AI generation remains separate.
 - A server route for a reviewed, adult-only AI plan. It remains unavailable until its external service and clinical approval are configured.
 
 ![YUKUN My Day preview with example entries](docs/screenshots/my-day.png)
